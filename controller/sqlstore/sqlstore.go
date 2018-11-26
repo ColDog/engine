@@ -3,6 +3,7 @@ package sqlstore
 import (
 	"context"
 	"database/sql"
+	"log"
 	"time"
 
 	_ "github.com/lib/pq" // Import pq driver.
@@ -67,10 +68,15 @@ func (s *Store) transact(
 	}
 	defer func() {
 		if p := recover(); p != nil {
-			tx.Rollback()
+			if rErr := tx.Rollback(); rErr != nil {
+				log.Printf("rollback failed: %v", rErr)
+			}
 			panic(p) // re-throw panic after Rollback
 		} else if err != nil {
-			tx.Rollback() // err is non-nil; don't change it
+			// err is non-nil; don't change it
+			if rErr := tx.Rollback(); rErr != nil {
+				log.Printf("rollback failed: %v", rErr)
+			}
 		} else {
 			err = tx.Commit() // err is nil; if Commit returns error update err
 		}
