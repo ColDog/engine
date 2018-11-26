@@ -16,7 +16,7 @@ func mustExec(db *sql.DB, sq string) {
 
 func TestSQLStore(t *testing.T) {
 	s, err := NewSQLStore(
-		"postgres://postgres@127.0.0.1:5432/postgres?sslmode=disable",
+		"postgres://postgres@127.0.0.1:5433/postgres?sslmode=disable",
 	)
 	require.NoError(t, err)
 

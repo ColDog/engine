@@ -25,7 +25,7 @@ jobs:
     - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
     - chmod +x ./cc-test-reporter
     - "./cc-test-reporter before-build"
-    - docker run -d -p 5432:5432 --rm -e POSTGRES_PASSWORD= postgres
+    - docker run -d -p 5433:5432 --rm -e POSTGRES_PASSWORD= postgres
     - docker run -d --name=battlesnake-redis --rm -t -p 6379:6379 redis
     - REDIS_URL=redis://127.0.0.1:6379 make test
     - cp coverage.txt c.out
