@@ -92,6 +92,10 @@ func testStoreGames(t *testing.T, s controller.Store) {
 	_, err = s.GetGame(ctx, key+"-missing")
 	require.Equal(t, controller.ErrNotFound, err)
 
+	// Should be able to set a game status.
+	err = s.SetGameStatus(ctx, key, "error")
+	require.NoError(t, err)
+
 	// Pop game can find it.
 	id, err := s.PopGameID(ctx)
 	require.Nil(t, err)
