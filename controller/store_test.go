@@ -8,5 +8,6 @@ import (
 )
 
 func TestInMemSuite(t *testing.T) {
-	testsuite.Suite(t, controller.InMemStore(), func() {})
+	s := controller.InMemStore()
+	testsuite.Suite(t, s, func() { s.(interface{ Clear() }).Clear() })
 }

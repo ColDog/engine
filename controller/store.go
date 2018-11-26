@@ -74,6 +74,12 @@ type inmem struct {
 	lock   sync.Mutex
 }
 
+func (in *inmem) Clear() {
+	in.games = map[string]*pb.Game{}
+	in.frames = map[string][]*pb.GameFrame{}
+	in.locks = map[string]*lock{}
+}
+
 func (in *inmem) Lock(ctx context.Context, key, token string) (string, error) {
 	in.lock.Lock()
 	defer in.lock.Unlock()

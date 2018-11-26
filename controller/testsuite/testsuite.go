@@ -76,6 +76,33 @@ func testStoreLockExpiry(t *testing.T, s controller.Store) {
 	controller.LockExpiry = 1 * time.Second
 }
 
+func testStoreGameStatus(t *testing.T, s controller.Store) {
+	key := uuid.NewV4().String()
+	ctx := context.Background()
+
+	// Create and fetch a game.
+	err := s.CreateGame(ctx, &pb.Game{
+		ID: key, Status: string(rules.GameStatusRunning)}, nil)
+	require.Nil(t, err)
+
+	// Set game to running.
+	err = s.SetGameStatus(ctx, key, "running")
+	require.Nil(t, err)
+
+	// Pop game can find it.
+	id, err := s.PopGameID(ctx)
+	require.Nil(t, err)
+	require.Equal(t, key, id)
+
+	// Set game to error.
+	err = s.SetGameStatus(ctx, key, "error")
+	require.Nil(t, err)
+
+	// Cannot pop.
+	_, err = s.PopGameID(ctx)
+	require.NotNil(t, err)
+}
+
 func testStoreGames(t *testing.T, s controller.Store) {
 	key := uuid.NewV4().String()
 	ctx := context.Background()
@@ -91,10 +118,6 @@ func testStoreGames(t *testing.T, s controller.Store) {
 	// NotFound error thrown.
 	_, err = s.GetGame(ctx, key+"-missing")
 	require.Equal(t, controller.ErrNotFound, err)
-
-	// Should be able to set a game status.
-	err = s.SetGameStatus(ctx, key, "error")
-	require.NoError(t, err)
 
 	// Pop game can find it.
 	id, err := s.PopGameID(ctx)
@@ -187,6 +210,7 @@ func Suite(t *testing.T, s controller.Store, pretest func()) {
 	t.Run("Lock", func(t *testing.T) { pretest(); testStoreLock(t, s) })
 	t.Run("LockExpiry", func(t *testing.T) { pretest(); testStoreLockExpiry(t, s) })
 	t.Run("Games", func(t *testing.T) { pretest(); testStoreGames(t, s) })
+	t.Run("GameStatus", func(t *testing.T) { pretest(); testStoreGameStatus(t, s) })
 	t.Run("GameFrames", func(t *testing.T) { pretest(); testStoreGameFrames(t, s) })
 	t.Run("ConcurrentWriters", func(t *testing.T) { pretest(); testStoreConcurrentWriters(t, s) })
 }
