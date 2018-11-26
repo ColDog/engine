@@ -58,7 +58,9 @@ type Store struct {
 	db *sql.DB
 }
 
-func (s *Store) transact(ctx context.Context, txFunc func(*sql.Tx) error) (err error) {
+// transact is a transaction wrapper, helps avoid failed to close connections.
+func (s *Store) transact(
+	ctx context.Context, txFunc func(*sql.Tx) error) (err error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return
@@ -283,7 +285,8 @@ func (s *Store) ListGameFrames(
 	}
 
 	rows, err := s.db.QueryContext(c,
-		`SELECT value FROM game_frames WHERE id=$1 ORDER BY turn `+order+` LIMIT $2 OFFSET $3`,
+		`SELECT value FROM game_frames WHERE id=$1 ORDER BY turn `+
+			order+` LIMIT $2 OFFSET $3`,
 		id, limit, offset,
 	)
 	if err != nil {
