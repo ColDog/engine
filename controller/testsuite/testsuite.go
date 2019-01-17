@@ -21,12 +21,12 @@ func testStoreLock(t *testing.T, s controller.Store) {
 	ctx := context.Background()
 
 	// Lock random key.
-	tok, err := s.Lock(ctx, key, "")
+	tok, err := s.Lock(ctx, key, "", 1*time.Second)
 	require.Nil(t, err)
 	require.NotEmpty(t, tok)
 
 	// Lock with valid token, no error same token returned.
-	tok2, err := s.Lock(ctx, key, tok)
+	tok2, err := s.Lock(ctx, key, tok, 1*time.Second)
 	require.Nil(t, err)
 	require.Equal(t, tok, tok2)
 
@@ -47,16 +47,13 @@ func testStoreLockExpiry(t *testing.T, s controller.Store) {
 	key := uuid.NewV4().String()
 	ctx := context.Background()
 
-	// Negative expiry, will always be expired.
-	controller.LockExpiry = -10 * time.Second
-
 	// Lock random key.
-	tok, err := s.Lock(ctx, key, "")
+	tok, err := s.Lock(ctx, key, "", -10*time.Second)
 	require.Nil(t, err)
 	require.NotEmpty(t, tok)
 
 	// Lock (with token) has expired.
-	tok2, err := s.Lock(ctx, key, tok)
+	tok2, err := s.Lock(ctx, key, tok, 1*time.Second)
 	require.Nil(t, err)
 	require.Equal(t, tok, tok2)
 
@@ -65,15 +62,12 @@ func testStoreLockExpiry(t *testing.T, s controller.Store) {
 	require.NoError(t, err)
 
 	// Lock (no token) has expired.
-	_, err = s.Lock(ctx, key, "")
+	_, err = s.Lock(ctx, key, "", 1*time.Second)
 	require.Nil(t, err)
 
 	// Unlock (no token) has expired.
 	err = s.Unlock(ctx, key, "")
 	require.Nil(t, err)
-
-	// Reset.
-	controller.LockExpiry = 1 * time.Second
 }
 
 func testStoreGameStatus(t *testing.T, s controller.Store) {
@@ -125,7 +119,7 @@ func testStoreGames(t *testing.T, s controller.Store) {
 	require.Equal(t, key, id)
 
 	// Lock test key, cannot pop.
-	_, err = s.Lock(ctx, key, "")
+	_, err = s.Lock(ctx, key, "", 1*time.Second)
 	require.Nil(t, err)
 	p, err := s.PopGameID(ctx)
 	fmt.Printf("%v", p)
@@ -190,7 +184,7 @@ func testStoreConcurrentWriters(t *testing.T, s controller.Store) {
 	for i := 0; i < 20; i++ {
 		go func() {
 			// Lock key, push allowed.
-			_, errl := s.Lock(ctx, key, "")
+			_, errl := s.Lock(ctx, key, "", 1*time.Second)
 			// If locked, push should be allowed. If not locked, push not
 			// allowed.
 			if errl == nil {

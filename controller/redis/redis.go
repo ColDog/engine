@@ -23,9 +23,6 @@ type Store struct {
 // DefaultDataTTL is how long data will be kept before redis evicts it
 const DefaultDataTTL = time.Hour * 24 * 30
 
-// DefaultLockExpiry is how long locks are kept around for
-const DefaultLockExpiry = time.Minute
-
 // NewStore will create a new instance of an underlying redis client, so it should not be re-created across "threads"
 // - connectURL see: github.com/go-redis/redis/options.go for URL specifics
 // The underlying redis client will be immediately tested for connectivity, so don't call this until you know redis can connect.
@@ -54,7 +51,7 @@ func (rs *Store) Close() error {
 
 // Lock will lock a specific game, returning a token that must be used to
 // write frames to the game.
-func (rs *Store) Lock(ctx context.Context, key, token string) (string, error) {
+func (rs *Store) Lock(ctx context.Context, key, token string, expires time.Duration) (string, error) {
 	// Generate a token if the one passed is empty
 	if token == "" {
 		token = uuid.NewV4().String()
@@ -62,7 +59,7 @@ func (rs *Store) Lock(ctx context.Context, key, token string) (string, error) {
 
 	// Acquire or match the lock token
 	pipe := rs.client.TxPipeline()
-	newLock := pipe.SetNX(gameLockKey(key), token, DefaultLockExpiry)
+	newLock := pipe.SetNX(gameLockKey(key), token, expires)
 	lockTkn := pipe.Get(gameLockKey(key))
 	_, err := pipe.Exec()
 	if err != nil {

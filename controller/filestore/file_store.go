@@ -70,7 +70,7 @@ func (fs *fileStore) closeGame(id string) {
 	delete(fs.writers, id)
 }
 
-func (fs *fileStore) Lock(ctx context.Context, key, token string) (string, error) {
+func (fs *fileStore) Lock(ctx context.Context, key, token string, expires time.Duration) (string, error) {
 	fs.lock.Lock()
 	defer fs.lock.Unlock()
 
@@ -86,7 +86,7 @@ func (fs *fileStore) Lock(ctx context.Context, key, token string) (string, error
 			// If the token is not expired and matched our active token, let's
 			// just bump the expiration.
 			if l.token == token {
-				l.expires = time.Now().Add(controller.LockExpiry)
+				l.expires = time.Now().Add(expires)
 				return l.token, nil
 			}
 			// If it's not our token, we should throw an error.
@@ -99,7 +99,7 @@ func (fs *fileStore) Lock(ctx context.Context, key, token string) (string, error
 	// Lock was expired or non-existant, create a new token.
 	l = &lock{
 		token:   token,
-		expires: now.Add(controller.LockExpiry),
+		expires: now.Add(expires),
 	}
 	fs.locks[key] = l
 	return l.token, nil

@@ -92,9 +92,9 @@ func (s *Store) transact(
 
 // Lock will lock a specific game, returning a token that must be used to
 // write frames to the game.
-func (s *Store) Lock(ctx context.Context, key, token string) (string, error) {
+func (s *Store) Lock(ctx context.Context, key, token string, expires time.Duration) (string, error) {
 	now := time.Now()
-	expiry := now.Add(controller.LockExpiry)
+	expiry := now.Add(expires)
 
 	if token == "" {
 		token = uuid.NewV4().String()
