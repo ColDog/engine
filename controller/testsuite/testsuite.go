@@ -53,7 +53,7 @@ func testStoreLockExpiry(t *testing.T, s controller.Store) {
 	require.NotEmpty(t, tok)
 
 	// Lock (with token) has expired.
-	tok2, err := s.Lock(ctx, key, tok, 1*time.Second)
+	tok2, err := s.Lock(ctx, key, tok, -10*time.Second)
 	require.Nil(t, err)
 	require.Equal(t, tok, tok2)
 
@@ -62,7 +62,7 @@ func testStoreLockExpiry(t *testing.T, s controller.Store) {
 	require.NoError(t, err)
 
 	// Lock (no token) has expired.
-	_, err = s.Lock(ctx, key, "", 1*time.Second)
+	_, err = s.Lock(ctx, key, "", -10*time.Second)
 	require.Nil(t, err)
 
 	// Unlock (no token) has expired.

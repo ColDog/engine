@@ -69,7 +69,7 @@ func TestWorker_RunnerErrors(t *testing.T) {
 			md, _ := metadata.FromOutgoingContext(c)
 			err = store.Unlock(c, id, md[pb.TokenKey][0])
 			require.NoError(t, err)
-			_, err = store.Lock(c, id, "")
+			_, err = store.Lock(c, id, "", 1*time.Second)
 			require.NoError(t, err)
 
 			return Runner(c, cl, id)

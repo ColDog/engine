@@ -8,9 +8,15 @@ import (
 
 	"github.com/battlesnakeio/engine/controller"
 	"github.com/battlesnakeio/engine/controller/pb"
+	"github.com/battlesnakeio/engine/controller/testsuite"
 	"github.com/battlesnakeio/engine/rules"
 	"github.com/stretchr/testify/require"
 )
+
+func TestSuite(t *testing.T) {
+	t.Skip("TODO: Figure out why testsuite doesn't work here")
+	testsuite.Suite(t, NewFileStore(""), func() {})
+}
 
 func TestFileStore(t *testing.T) {
 	fs, w := testFileStore()
@@ -120,9 +126,9 @@ func TestSetGameStatusInvalidGame(t *testing.T) {
 
 func TestLockUnlock(t *testing.T) {
 	fs, _ := testFileStore()
-	token, err := fs.Lock(context.Background(), "asdf", "")
+	token, err := fs.Lock(context.Background(), "asdf", "", 1*time.Second)
 	require.NoError(t, err)
-	token, err = fs.Lock(context.Background(), "asdf", token)
+	token, err = fs.Lock(context.Background(), "asdf", token, 1*time.Second)
 	require.NoError(t, err)
 	err = fs.Unlock(context.Background(), "asdf", token)
 	require.NoError(t, err)
@@ -130,23 +136,17 @@ func TestLockUnlock(t *testing.T) {
 
 func TestLockExpired(t *testing.T) {
 	fs, _ := testFileStore()
-	tempExpr := controller.LockExpiry
-	controller.LockExpiry = -1 * time.Second
-	defer func() {
-		controller.LockExpiry = tempExpr
-	}()
-
-	token, err := fs.Lock(context.Background(), "asdf", "")
+	token, err := fs.Lock(context.Background(), "asdf", "", -1*time.Second)
 	require.NoError(t, err)
-	_, err = fs.Lock(context.Background(), "asdf", token)
+	_, err = fs.Lock(context.Background(), "asdf", token, -1*time.Second)
 	require.NoError(t, err)
 }
 
 func TestLockBadToken(t *testing.T) {
 	fs, _ := testFileStore()
-	_, err := fs.Lock(context.Background(), "asdf", "")
+	_, err := fs.Lock(context.Background(), "asdf", "", 1*time.Second)
 	require.NoError(t, err)
-	_, err = fs.Lock(context.Background(), "asdf", "badtoken")
+	_, err = fs.Lock(context.Background(), "asdf", "badtoken", 1*time.Second)
 	require.NotNil(t, err)
 }
 
@@ -158,7 +158,7 @@ func TestUnlockNothing(t *testing.T) {
 
 func TestUnlockBadToken(t *testing.T) {
 	fs, _ := testFileStore()
-	_, err := fs.Lock(context.Background(), "aaa", "")
+	_, err := fs.Lock(context.Background(), "aaa", "", 1*time.Second)
 	require.NoError(t, err)
 	err = fs.Unlock(context.Background(), "aaa", "wrong")
 	require.NotNil(t, err)

@@ -16,7 +16,7 @@ test:
 .PHONY: test
 
 test-e2e: install
-	go test -timeout 120s -race ./e2e -enable-e2e
+	go test -v -timeout 120s -race ./e2e -enable-e2e
 .PHONY: test-e2e
 
 lint:

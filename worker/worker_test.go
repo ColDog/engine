@@ -14,8 +14,6 @@ import (
 )
 
 func server() (pb.ControllerClient, controller.Store) {
-	controller.LockExpiry = 150 * time.Millisecond
-
 	store := controller.InMemStore()
 	ctrl := controller.New(store)
 	go func() {
