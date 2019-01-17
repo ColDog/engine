@@ -57,6 +57,12 @@ func (s *Server) ValidateSnake(ctx context.Context, req *pb.ValidateSnakeRequest
 	return validateSnakeResponse, nil
 }
 
+// getExpiry gives a relatively safe lock expiry given how long the worker will
+// take to perform work.
+func getExpiry(game *pb.Game) time.Duration {
+	return (time.Duration(game.TurnTimeout) * time.Millisecond) + 2*time.Second
+}
+
 // Pop should pop a game that is unlocked and unfinished from the queue, lock
 // the game and return it to the worker to begin processing. This call will
 // be polled by the workers.
@@ -66,7 +72,12 @@ func (s *Server) Pop(ctx context.Context, _ *pb.PopRequest) (*pb.PopResponse, er
 		return nil, err
 	}
 
-	token, err := s.Store.Lock(ctx, id, "")
+	game, err := s.Store.GetGame(ctx, id)
+	if err != nil {
+		return nil, err // This would be real weird.
+	}
+
+	token, err := s.Store.Lock(ctx, id, "", getExpiry(game))
 	if err != nil {
 		return nil, err
 	}
@@ -124,18 +135,18 @@ func (s *Server) AddGameFrame(ctx context.Context, req *pb.AddGameFrameRequest) 
 	if req.GameFrame == nil {
 		return nil, status.Error(codes.InvalidArgument, "controller: game frame must not be nil")
 	}
+	game, err := s.Store.GetGame(ctx, req.ID)
+	if err != nil {
+		return nil, err
+	}
 
 	// Lock the game again, if this fails, the lock is not valid.
-	_, err := s.Store.Lock(ctx, req.ID, token)
+	_, err = s.Store.Lock(ctx, req.ID, token, getExpiry(game))
 	if err != nil {
 		return nil, err
 	}
 
 	err = s.Store.PushGameFrame(ctx, req.ID, req.GameFrame)
-	if err != nil {
-		return nil, err
-	}
-	game, err := s.Store.GetGame(ctx, req.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +177,7 @@ func (s *Server) EndGame(ctx context.Context, req *pb.EndGameRequest) (*pb.EndGa
 
 	// Lock the game again, if this fails, the lock is not valid. We only need
 	// the lock for the next part where we set the game status.
-	newToken, err := s.Store.Lock(ctx, req.ID, token)
+	newToken, err := s.Store.Lock(ctx, req.ID, token, 5*time.Second)
 	if err != nil {
 		return nil, err
 	}
