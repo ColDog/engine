@@ -52,8 +52,9 @@ func randTimeoutInterceptor(ctx context.Context, method string, req, reply inter
 }
 
 var workerCmd = &cobra.Command{
-	Use:   "worker",
-	Short: "runs the engine worker",
+	Use:    "worker",
+	Short:  "runs the engine worker",
+	PreRun: func(c *cobra.Command, args []string) { prometheus() },
 	Run: func(c *cobra.Command, args []string) {
 		interceptors := []grpc.UnaryClientInterceptor{promgrpc.UnaryClientInterceptor}
 		if workerChaos {

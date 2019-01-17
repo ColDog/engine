@@ -19,8 +19,9 @@ func init() {
 }
 
 var apiCmd = &cobra.Command{
-	Use:   "api",
-	Short: "runs the engine api",
+	Use:    "api",
+	Short:  "runs the engine api",
+	PreRun: func(c *cobra.Command, args []string) { prometheus() },
 	Run: func(c *cobra.Command, args []string) {
 		client, err := pb.Dial(controllerAddr)
 		if err != nil {

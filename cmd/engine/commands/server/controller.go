@@ -27,8 +27,9 @@ func init() {
 }
 
 var controllerCmd = &cobra.Command{
-	Use:   "controller",
-	Short: "runs the engine controller",
+	Use:    "controller",
+	Short:  "runs the engine controller",
+	PreRun: func(c *cobra.Command, args []string) { prometheus() },
 	Run: func(c *cobra.Command, args []string) {
 		var store controller.Store
 		var err error
