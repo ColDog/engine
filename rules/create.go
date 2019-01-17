@@ -7,6 +7,9 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+// SnakeTimeout represents the default snake timeout in milliseconds.
+const SnakeTimeout = 1000
+
 // GameMode represents the mode the game is running in
 type GameMode string
 
@@ -36,8 +39,8 @@ func CreateInitialGame(req *pb.CreateRequest) (*pb.Game, []*pb.GameFrame, error)
 		Width:        req.Width,
 		Height:       req.Height,
 		Status:       string(GameStatusStopped),
-		SnakeTimeout: 1000, // TODO: make this configurable
-		TurnTimeout:  200,  // TODO: make this configurable
+		SnakeTimeout: SnakeTimeout,                      // TODO: make this configurable
+		TurnTimeout:  int32(SnakeTimeout * len(snakes)), // TODO: make this configurable
 		Mode:         string(GameModeMultiPlayer),
 	}
 
