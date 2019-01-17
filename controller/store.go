@@ -13,9 +13,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// LockExpiry is the time after which a lock will expire.
-var LockExpiry = 5 * time.Second
-
 var (
 	// ErrNotFound is thrown when a game is not found.
 	ErrNotFound = status.Error(codes.NotFound, "controller: game not found")
@@ -32,7 +29,7 @@ var (
 type Store interface {
 	// Lock will lock a specific game, returning a token that must be used to
 	// write frames to the game.
-	Lock(ctx context.Context, key, token string) (string, error)
+	Lock(ctx context.Context, key, token string, expires time.Duration) (string, error)
 	// Unlock will unlock a game if it is locked and the token used to lock it
 	// is correct.
 	Unlock(ctx context.Context, key, token string) error
@@ -80,7 +77,7 @@ func (in *inmem) Clear() {
 	in.locks = map[string]*lock{}
 }
 
-func (in *inmem) Lock(ctx context.Context, key, token string) (string, error) {
+func (in *inmem) Lock(ctx context.Context, key, token string, expires time.Duration) (string, error) {
 	in.lock.Lock()
 	defer in.lock.Unlock()
 
@@ -96,7 +93,7 @@ func (in *inmem) Lock(ctx context.Context, key, token string) (string, error) {
 			// If the token is not expired and matched our active token, let's
 			// just bump the expiration.
 			if l.token == token {
-				l.expires = time.Now().Add(LockExpiry)
+				l.expires = time.Now().Add(expires)
 				return l.token, nil
 			}
 			// If it's not our token, we should throw an error.
@@ -109,7 +106,7 @@ func (in *inmem) Lock(ctx context.Context, key, token string) (string, error) {
 	// Lock was expired or non-existant, create a new token.
 	l = &lock{
 		token:   token,
-		expires: now.Add(LockExpiry),
+		expires: now.Add(expires),
 	}
 	in.locks[key] = l
 	return l.token, nil
