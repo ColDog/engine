@@ -223,7 +223,7 @@ func TestGatherFrames(t *testing.T) {
 		return &pb.ListGameFramesResponse{}
 	}
 	frames := make(chan *pb.GameFrame)
-	go gatherFrames(frames, mc, "fake-id")
+	go gatherFrames(context.Background(), frames, mc, "fake-id")
 	frameCount := 0
 	for range frames {
 		frameCount++
