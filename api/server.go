@@ -84,7 +84,7 @@ func framesSocket(w http.ResponseWriter, r *http.Request, ps httprouter.Params, 
 		}
 	}()
 	frames := make(chan *pb.GameFrame)
-	go gatherFrames(frames, c, id)
+	go gatherFrames(r.Context(), frames, c, id)
 	for frame := range frames {
 		m := jsonpb.Marshaler{EmitDefaults: true}
 
@@ -108,10 +108,10 @@ func framesSocket(w http.ResponseWriter, r *http.Request, ps httprouter.Params, 
 	}
 }
 
-func gatherFrames(frames chan<- *pb.GameFrame, c pb.ControllerClient, id string) {
+func gatherFrames(ctx context.Context, frames chan<- *pb.GameFrame, c pb.ControllerClient, id string) {
 	offset := int32(0)
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		resp, err := c.ListGameFrames(ctx, &pb.ListGameFramesRequest{
 			ID:     id,
 			Offset: offset,
