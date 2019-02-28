@@ -14,8 +14,38 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	inFlightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "engine",
+		Subsystem: "api",
+		Name:      "in_flight",
+		Help:      "A gauge of requests currently being served by the wrapped handler.",
+	})
+	counterMetric = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "engine",
+			Subsystem: "api",
+			Name:      "requests_total",
+			Help:      "A counter for requests to the wrapped handler.",
+		},
+		[]string{"code", "method"},
+	)
+	durationMetric = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "engine",
+			Subsystem: "api",
+			Name:      "request_duration_seconds",
+			Help:      "A histogram of latencies for requests.",
+			Buckets:   []float64{.25, .5, 1, 2.5, 5, 10},
+		},
+		[]string{"method"},
+	)
 )
 
 // Server this is the api server
@@ -37,7 +67,13 @@ func New(addr string, c pb.ControllerClient) *Server {
 	router.GET("/socket/:id", logging(newClientHandle(c, framesSocket)))
 	router.GET("/validateSnake", logging(newClientHandle(c, validateSnake)))
 
-	handler := cors.Default().Handler(router)
+	handler := promhttp.InstrumentHandlerInFlight(inFlightMetric,
+		promhttp.InstrumentHandlerDuration(durationMetric,
+			promhttp.InstrumentHandlerCounter(counterMetric,
+				cors.Default().Handler(router),
+			),
+		),
+	)
 
 	return &Server{
 		hs: &http.Server{
