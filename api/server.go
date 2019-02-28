@@ -27,6 +27,12 @@ var (
 		Name:      "in_flight",
 		Help:      "A gauge of requests currently being served by the wrapped handler.",
 	})
+	activeSocketMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "engine",
+		Subsystem: "api",
+		Name:      "socket_active",
+		Help:      "A gauge of socket requests.",
+	})
 	counterMetric = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "engine",
@@ -113,6 +119,11 @@ func framesSocket(w http.ResponseWriter, r *http.Request, ps httprouter.Params, 
 		log.WithError(err).Error("Unable to upgrade connection")
 		return
 	}
+
+	// Describes active sockets.
+	activeSocketMetric.Add(1)
+	defer activeSocketMetric.Dec()
+
 	defer func() {
 		err = ws.Close()
 		if err != nil {
